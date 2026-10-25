@@ -53,6 +53,18 @@
 
 Реализация, инструкция по запуску и результаты находятся в [tasks/02-wms-fbs-marking](tasks/02-wms-fbs-marking/README.md).
 
+## Решение задачи 03
+
+Разбор обращений, исправления PHP и сценарии проверки находятся в [tasks/03-b2b-prices](tasks/03-b2b-prices/03-b2b-prices.md).
+
+## Решение задачи 04
+
+Разбор обращений сотрудников по логам находится в [tasks/04-support-incidents](tasks/04-support-incidents/04-incidents.md).
+
 ## Решение задачи 05
 
 Анализ дублей клиентов, результаты и проектирование модели обращений находятся в [tasks/05-crm-clients](tasks/05-crm-clients/README.md).
+
+## Решение задачи 06
+
+Описание улучшения и исполняемый прототип находятся в [tasks/06-open-improvement](tasks/06-open-improvement/06-improvement.md).

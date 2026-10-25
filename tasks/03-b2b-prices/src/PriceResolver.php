@@ -30,6 +30,10 @@ final class FileCache
     }
 }
 
+final class PriceNotFoundException extends RuntimeException
+{
+}
+
 final class PriceResolver
 {
     /**
@@ -51,38 +55,51 @@ final class PriceResolver
     {
         $type = $this->clients[$clientId]['price_type'];
 
-        return $this->prices[$sku][$type] ?? $this->prices[$sku]['RETAIL'];
+        if (!isset($this->prices[$sku][$type])) {
+            throw new PriceNotFoundException("Для товара {$sku} нет цены типа {$type}");
+        }
+
+        return $this->prices[$sku][$type];
     }
 
     public function discountPercent(string $clientId, string $sku, int $qty): float
     {
-        $percent = (float) $this->clients[$clientId]['personal_discount'];
+        $applicableDiscounts = [(float) $this->clients[$clientId]['personal_discount']];
 
         foreach ($this->rules as $rule) {
             if (!$this->isActive($rule)) {
                 continue;
             }
             if ($rule['type'] === 'volume' && $qty >= $rule['min_qty']) {
-                $percent += $rule['percent'];
+                $applicableDiscounts[] = (float) $rule['percent'];
             }
             if ($rule['type'] === 'promo' && $rule['category'] === $this->products[$sku]['category']) {
-                $percent += $rule['percent'];
+                $applicableDiscounts[] = (float) $rule['percent'];
             }
         }
 
-        return $percent;
+        return max($applicableDiscounts);
     }
 
     private function isActive(array $rule): bool
     {
-        $today = $this->now->format('d.m.Y');
+        $timezone = $this->now->getTimezone();
+        $today = $this->now->setTime(0, 0);
+        $validFrom = DateTimeImmutable::createFromFormat('!d.m.Y', $rule['valid_from'], $timezone);
+        $validTo = DateTimeImmutable::createFromFormat('!d.m.Y', $rule['valid_to'], $timezone);
 
-        return $today >= $rule['valid_from'] && $today <= $rule['valid_to'];
+        if ($validFrom === false || $validTo === false) {
+            throw new LogicException("Некорректный период действия скидки {$rule['id']}");
+        }
+
+        return $validFrom <= $today && $today <= $validTo;
     }
 
     public function price(string $clientId, string $sku, int $qty = 1): float
     {
-        return $this->cache->remember("price:{$clientId}:{$sku}:{$qty}", 86400, function () use ($clientId, $sku, $qty): float {
+        $priceType = $this->clients[$clientId]['price_type'];
+
+        return $this->cache->remember("price:{$clientId}:{$priceType}:{$sku}:{$qty}", 86400, function () use ($clientId, $sku, $qty): float {
             $base = $this->basePrice($clientId, $sku);
             $discount = $this->discountPercent($clientId, $sku, $qty);
 

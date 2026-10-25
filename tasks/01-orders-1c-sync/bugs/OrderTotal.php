@@ -22,7 +22,7 @@ final class OrderTotal
     {
         $sum = 0.0;
         foreach ($items as $item) {
-            $sum += (int) $item['price'] * $item['qty'];
+            $sum += $item['price'] * $item['qty'];
         }
 
         return round($sum, 2);
@@ -46,7 +46,7 @@ final class OrderTotal
      */
     public static function vatIncluded(float $total): float
     {
-        return round($total * self::VAT_RATE / 100, 2);
+        return round($total * self::VAT_RATE / (100 + self::VAT_RATE), 2);
     }
 
     /**
@@ -61,7 +61,7 @@ final class OrderTotal
         return [
             'subtotal' => $subtotal,
             'total'    => $total,
-            'vat'      => self::vatIncluded($subtotal),
+            'vat'      => self::vatIncluded($total),
         ];
     }
 }
